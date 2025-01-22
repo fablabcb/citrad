@@ -1,3 +1,19 @@
+# Migrated from Sensor Unit
+
+## Hardware
+
+This prototype works with the [IPS-354](https://media.digikey.com/pdf/Data%20Sheets/InnoSenT/200730_Data%20Sheet_IPS-354_V1.5.pdf)
+Radar Sensor from InnoSenT connected directly to the mic input of the [Teensy Audio Board](https://www.pjrc.com/store/teensy3_audio.html). 
+
+## Wiring
+
+| IPS-354           | Audio Board | Teensy |
+| ---------------- | ----------- | ------ |
+| Pin 2 (enable)   | -           | Pin 22 |
+| Pin 3 (Vcc)      | -           | Vcc    |
+| Pin 4 (Gnd)      | Mic Gnd     | Gnd    |
+| Pin 5 (signal I) | Mic         | -      |
+
 # Bauanleitung Akkuvariante
 
 ## Teile

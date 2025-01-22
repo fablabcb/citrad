@@ -63,7 +63,6 @@ configure_x86:
 	install -d $(BUILD_DIR_X86)
 	(cd $(BUILD_DIR_X86) && \
 	 cmake \
-	  -G "Ninja" \
 	  -DCMAKE_BUILD_TYPE=$(TYPE) \
 	  -DCMAKE_INSTALL_PREFIX=$(INSTALL_PREFIX) \
 	  $(O) \
@@ -75,7 +74,6 @@ configure_android:
 	install -d $(BUILD_DIR_ANDROID)
 	(cd $(BUILD_DIR_ANDROID) && \
 	 cmake \
-	  -G "Ninja" \
 	  -DANDROID_PLATFORM=$(ANDROID_PLATFORM) \
 	  -DCMAKE_BUILD_TYPE=$(TYPE) \
 	  -DCMAKE_INSTALL_PREFIX=$(INSTALL_PREFIX) \
@@ -91,7 +89,6 @@ configure_android:
 	)
 
 # BUILD
-#
 .PHONY: build_x86
 build_x86: $(BUILD_DIR_X86)/CMakeCache.txt
 	cmake -E chdir $(BUILD_DIR_X86) cmake --build . -- -j 16
@@ -101,8 +98,10 @@ build_x86: $(BUILD_DIR_X86)/CMakeCache.txt
 build_android: $(BUILD_DIR_ANDROID)/CMakeCache.txt
 	cmake -E chdir $(BUILD_DIR_ANDROID) cmake --build . -- -j 16
 
+.PHONY: run
+run:
+	$(BUILD_DIR_X86)/citrad.mobileCompanion.bin
 # CLEAN
-#
 .PHONY: clean
 clean: clean_x86 clean_android
 
@@ -123,15 +122,8 @@ buildNdeploy:
 	$(MAKE) build_android
 	$(MAKE) deploy
 
-.PHONY: connectHandy
-connectHandy:
-	$(ANDROID_APD) devices -l
-	echo "if the device is not listed, go to setting->developer stuff and enable USB debugging"
-	#$(ANDROID_SDK_DIR)/platform-tools/adb attach ZY323NL6NQ
-	
 .PHONY: monitor
 monitor:
-	#$(ANDROID_ADB) logcat -c
 	$(ANDROID_ADB) logcat -T '$(date +"%m.%d %H:%M:%S:000")' *:D
 .PHONY: monitorPid
 monitorPid:

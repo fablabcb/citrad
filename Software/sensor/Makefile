@@ -48,7 +48,8 @@ monitor:
 .PHONY: testSetup
 testSetup:
 	@echo -n "Testing for arduino-cli: " && (which arduino-cli) || (echo "FAILED - Please install arduino-cli" && exit 1)
-	@echo "Testing for BOARD platform " && (arduino-cli core list | grep -q "esp32") || (echo "FAILED - Please run arduino-cli core install esp32:esp32" && exit 1)
+	@echo "Testing board files " && (arduino-cli config get board_manager.additional_urls | grep -q "package_teensy_index.json") || echo ("FAILED - Please run darduino-cli config add board_manager.additional_urls https://www.pjrc.com/teensy/package_teensy_index.json" && exit 1)
+	@echo "Testing for BOARD platform " && (arduino-cli core list | grep -q "teensy:avr") || (echo "FAILED - Please run arduino-cli core install teensy:avr" && exit 1)
 	@echo "Testing for DebugLog " && (arduino-cli lib list | grep -q "DebugLog") || (echo "FAILED - Please run arduino-cli lib install DEBUGLOG" && exit 1)
 	@echo "Setup seems to be ok."
 

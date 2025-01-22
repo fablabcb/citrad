@@ -43,4 +43,5 @@ add_executable(sensor
     SerialIO.cpp
     SignalAnalyzer.hpp
     SignalAnalyzer.cpp
+    README.md
 )

@@ -10,11 +10,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(ANDROID)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
-else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -fsanitize=address -fsanitize=leak -fsanitize=undefined")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -fsanitize=address -fsanitize=leak -fsanitize=undefined")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize=leak")
-    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fsanitize=address -fsanitize=leak")
 endif()
 
 # android section start
@@ -24,6 +19,7 @@ if(ANDROID)
     set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE)
     set(QT_ANDROID_APPLICATION_BINARY ${_ANDROID_NAME})
     message("Adding qt-android-cmake funtionality")
+    # from https://github.com/LaurentGomila/qt-android-cmake.git
     include(external/qt-android-cmake/CMakeLists.txt)
 endif()
 # android section end
@@ -100,6 +96,10 @@ if(ANDROID)
         PRIVATE log
         PRIVATE Qt5::AndroidExtras
     )
+    target_compile_options(${_NAME}
+        PRIVATE
+        -Wall -Werror
+    )
 else()
     add_executable(${_NAME}
         ${SOURCES}
@@ -107,6 +107,7 @@ else()
         ${RESOURCES}
         src/devices/QtSerialDeviceManager.cpp
         src/devices/QtSerialDeviceManager.hpp
+        README.md
     )
 
     set_target_properties(${_NAME} PROPERTIES
@@ -117,6 +118,16 @@ else()
 
     target_link_libraries(${_NAME}
         PRIVATE Qt5::SerialPort
+        ubsan
+        asan
+    )
+    target_compile_options(${_NAME}
+        PRIVATE
+        -Wall -Werror -fsanitize=address -fsanitize=leak -fsanitize=undefined
+    )
+    target_link_options(${_NAME}
+        PRIVATE
+        -fsanitize=address -fsanitize=leak
     )
 endif()
 
