@@ -19,15 +19,12 @@ void SerialIO::setup()
     }
 }
 
-void SerialIO::processInputs(AudioSystem::Config& config, bool& sendOutput)
+void SerialIO::processInputs(AudioSystem::Config& config)
 {
     // control input from serial
     while(Serial.available())
     {
         int8_t input = Serial.read();
-
-        if(input == 100) // 'd' for data
-            sendOutput = true;
 
         if((input == 0) & (config.micGain > 0.001))
         { // - key
@@ -87,26 +84,6 @@ void SerialIO::processInputs(AudioSystem::Config& config, bool& sendOutput)
             }
         }
     }
-}
-
-void SerialIO::sendOutput(SignalAnalyzer::Results const& analyzerResults, float audioPeak, Config const& config)
-{
-    // send data via serial port - this is tied to the FFT_visualisation-pde java code
-    auto const micGain = static_cast<int8_t>(config.audio.micGain);
-    SerialUSB1.write((byte*)&micGain, 1);
-    // this has been removed on the sensor side; we just send 0 instead
-    // was: Serial.write((byte*)&analyzerResults.forward.maxAmplitudeIdx, 2);
-    uint16_t fake = 0;
-    SerialUSB1.write((byte*)&fake, 2);
-
-    // highest peak-to-peak distance of the signal (if >= 1 clipping occurs)
-    SerialUSB1.write((byte*)&audioPeak, 4);
-
-    uint16_t binCount = analyzerResults.setupData.binsToProcess.count();
-    SerialUSB1.write((byte*)&binCount, 2);
-
-    for(size_t i = analyzerResults.setupData.binsToProcess.from; i <= analyzerResults.setupData.binsToProcess.to; i++)
-        SerialUSB1.write((byte*)&(analyzerResults.noiseFloorDistance[analyzerResults.setupData.iqOffset + i + 1]), 4);
 }
 
 void SerialIO::sendData(char const* data, size_t size, size_t timestamp, size_t counter)

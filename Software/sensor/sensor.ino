@@ -78,15 +78,11 @@ void loop()
         return;
     }
 
-    // TODO remove or change - this is now handled via SerialUSB1.dtr()
-    bool sendOutput = false; // send output over serial - attention: this is only send once and needs to be preserved
-    // and thus might be better put into global state or something
-
     static size_t sampleCounter = 0;
     static size_t sendSampleCounter = 0;
     sampleCounter++;
 
-    serialIO.processInputs(config.audio, sendOutput);
+    serialIO.processInputs(config.audio);
     if(config.audio.hasChanges)
     {
         audio.updateIQ(config.audio);
@@ -153,7 +149,4 @@ void loop()
         // SerialUSB1.println(second());
         // SerialUSB1.print("csv sd write time: ");
     }
-
-    if(sendOutput)
-        serialIO.sendOutput(results, audio.getPeak(), config);
 }
