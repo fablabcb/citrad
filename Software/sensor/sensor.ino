@@ -10,6 +10,14 @@
 #include <Wire.h>
 #include <utility/imxrt_hw.h>
 
+enum class States
+{
+    Warmup,  // start here and ensure the battery has enough power; wait 10s until starting to write to files
+    Idle,    // do not analyze signal and do not write output
+    Running, // write to one or both of serial and SD card
+};
+
+States state = States::Warmup;
 AudioSystem audio;
 SignalAnalyzer signalAnalyzer;
 SignalAnalyzer::Results results; // global to optimize for speed
@@ -18,11 +26,11 @@ Config config;
 FileIO fileWriter;
 SerialIO serialIO;
 
-bool canWriteData = false;
+bool hasSdCard = false;
 
 void onSdCardActive()
 {
-    canWriteData = true;
+    hasSdCard = true;
     Serial.println("(I) SD card initialized");
     auto configFromFile = fileWriter.readConfigFile();
     config.process(configFromFile);
@@ -62,14 +70,61 @@ void setup()
 
 void loop()
 {
-    if(not canWriteData)
+    serialIO.onLoop(config);
+    if(config.audio.hasChanges)
     {
-        delay(1000);
+        audio.updateIQ(config.audio);
+        config.audio.hasChanges = false;
+    }
 
+    auto now = millis();
+    static auto lastTry = now;
+    if(hasSdCard == false && (now - lastTry > 7000)) // 7s to have ~10s between attempts
+    {
+        // Note: This call can take about 3 seconds and it blocks!
+        Serial.print("(W) Checking for SD card ... ");
         if(fileWriter.setupSdCard())
+        {
+            Serial.println("done");
             onSdCardActive();
+        }
+        else
+        {
+            Serial.println("not available");
+        }
+        lastTry = millis();
+    }
 
-        return;
+    bool const hasSerial = SerialUSB1.dtr();
+
+    switch(state)
+    {
+        case States::Warmup:
+            if(millis() > 10000)
+            {
+                state = States::Idle;
+                Serial.println("(I) Leaving Warmup");
+                return;
+            }
+            break;
+
+        case States::Idle:
+            if(hasSerial || hasSdCard)
+            {
+                state = States::Running;
+                Serial.println("(I) Leaving Idle");
+                return;
+            }
+            break;
+
+        case States::Running:
+            if(not hasSerial && not hasSdCard)
+            {
+                state = States::Idle;
+                Serial.println("(I) Enter Idle");
+                return;
+            }
+            break;
     }
 
     if(not audio.hasData())
@@ -78,22 +133,19 @@ void loop()
         return;
     }
 
-    static size_t sampleCounter = 0;
-    static size_t sendSampleCounter = 0;
-    sampleCounter++;
-
-    serialIO.processInputs(config.audio);
-    if(config.audio.hasChanges)
+    if(state == States::Idle)
     {
-        audio.updateIQ(config.audio);
-        config.audio.hasChanges = false;
+        delay(100);
+        return;
     }
 
     results.timestamp = millis();
-    audio.extractSpectrum(results.spectrum);
+    audio.copySpectrumTo(results.spectrum);
 
-    serialIO.onLoop(config);
-    if(SerialUSB1.dtr())
+    static size_t sampleCounter = 0;
+    static size_t sendSampleCounter = 0;
+    sampleCounter++;
+    if(hasSerial)
     {
         serialIO.sendData(
             static_cast<char const*>((void*)results.spectrum.data()),
@@ -109,7 +161,7 @@ void loop()
 
     signalAnalyzer.processData(results);
 
-    if(config.writeDataToSdCard)
+    if(state == States::Running && hasSdCard && config.writeDataToSdCard)
     {
         bool ok = false;
 
@@ -119,8 +171,7 @@ void loop()
             if(not ok)
             {
                 Serial.println("(E) Failed to write raw data to SD card");
-                canWriteData = false;
-                // there does not seem to be a sane way to check if the SD card is back again - hope for the best
+                hasSdCard = false;
             }
         }
 
@@ -130,8 +181,7 @@ void loop()
             if(not ok)
             {
                 Serial.println("(E) Failed to write csv metrics data to SD card");
-                canWriteData = false;
-                // there does not seem to be a sane way to check if the SD card is back again - hope for the best
+                hasSdCard = false;
             }
         }
 
@@ -141,12 +191,8 @@ void loop()
             if(not ok)
             {
                 Serial.println("(E) Failed to write csv car data to SD card");
-                canWriteData = false;
-                // there does not seem to be a sane way to check if the SD card is back again - hope for the best
+                hasSdCard = false;
             }
         }
-
-        // SerialUSB1.println(second());
-        // SerialUSB1.print("csv sd write time: ");
     }
 }

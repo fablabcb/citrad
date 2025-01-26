@@ -74,7 +74,7 @@ void SerialIO::processInputs(AudioSystem::Config& config)
                 Teensy3Clock.set(externalTime); // set Teensy RTC
 
                 Serial.printf(
-                    "Time set to: %04d-%02d-%02d_%02d:%02d:%02d\n",
+                    "Time set to: %04d-%02d-%02d_%02d:%02d:%02d (UTC)\n",
                     year(),
                     month(),
                     day(),
@@ -110,7 +110,7 @@ void SerialIO::onLoop(Config& config)
         {
             Serial.printf("Hello Citizen Radar Monitor - I am %s\n", teensySerialNumberAsString());
             Serial.printf(
-                "Internal date & clock: %04d-%02d-%02d_%02d:%02d:%02d\n",
+                "Internal date & clock: %04d-%02d-%02d_%02d:%02d:%02d (UTC)\n",
                 year(),
                 month(),
                 day(),
@@ -118,6 +118,8 @@ void SerialIO::onLoop(Config& config)
                 minute(),
                 second());
         }
+
+        processInputs(config.audio);
     }
     hadConnection = hasConnection;
 }

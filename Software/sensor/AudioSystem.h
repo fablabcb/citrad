@@ -35,7 +35,7 @@ class AudioSystem
     void setup(Config const& config);
 
     bool hasData();
-    void extractSpectrum(std::vector<float>& spectrum);
+    void copySpectrumTo(std::vector<float>& spectrum);
     void updateIQ(Config const& config);
     float getPeak() const { return peak1.read(); }
 

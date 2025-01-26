@@ -37,7 +37,7 @@ bool AudioSystem::hasData()
     return fft_IQ1024.available();
 }
 
-void AudioSystem::extractSpectrum(std::vector<float>& spectrum)
+void AudioSystem::copySpectrumTo(std::vector<float>& spectrum)
 {
     float const* data = fft_IQ1024.getData();
 
