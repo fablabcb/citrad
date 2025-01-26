@@ -53,3 +53,6 @@ testSetup:
 	@echo "Testing for DebugLog " && (arduino-cli lib list | grep -q "DebugLog") || (echo "FAILED - Please run arduino-cli lib install DEBUGLOG" && exit 1)
 	@echo "Setup seems to be ok."
 
+.PHONY: setTime
+setTime:
+	@date -u +T%s > /dev/ttyACM0

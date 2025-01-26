@@ -37,11 +37,10 @@ void setup()
     pinMode(PIN_A3, OUTPUT); // A3=17, A8=22, A4=18
     digitalWrite(PIN_A4, LOW);
 
-    // TODO this seems to be a get&set to and from the same data point?
-    // setTime(Teensy3Clock.get());
-    // timestamp = now();
     {
+        // read RTC
         time_t timestamp = Teensy3Clock.get();
+        // write to time lib
         setTime(timestamp);
     }
 

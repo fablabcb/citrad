@@ -19,15 +19,6 @@ void SerialIO::setup()
     }
 }
 
-void SerialIO::printDigits(int digits)
-{
-    // utility function for digital clock display: prints preceding colon and leading 0
-    Serial.print(":");
-    if(digits < 10)
-        Serial.print('0');
-    Serial.print(digits);
-}
-
 void SerialIO::processInputs(AudioSystem::Config& config, bool& sendOutput)
 {
     // control input from serial
@@ -84,19 +75,16 @@ void SerialIO::processInputs(AudioSystem::Config& config, bool& sendOutput)
             {
                 setTime(externalTime);          // Sync Arduino clock to the time received on the serial port
                 Teensy3Clock.set(externalTime); // set Teensy RTC
-            }
 
-            Serial.print("Time set to: ");
-            Serial.print(year());
-            Serial.print("-");
-            Serial.print(month());
-            Serial.print("-");
-            Serial.print(day());
-            Serial.print(" ");
-            Serial.print(hour());
-            printDigits(minute());
-            printDigits(second());
-            Serial.println();
+                Serial.printf(
+                    "Time set to: %04d-%02d-%02d_%02d:%02d:%02d\n",
+                    year(),
+                    month(),
+                    day(),
+                    hour(),
+                    minute(),
+                    second());
+            }
         }
     }
 }
@@ -144,6 +132,14 @@ void SerialIO::onLoop(Config& config)
         if(not hadConnection)
         {
             Serial.printf("Hello Citizen Radar Monitor - I am %s\n", teensySerialNumberAsString());
+            Serial.printf(
+                "Internal date & clock: %04d-%02d-%02d_%02d:%02d:%02d\n",
+                year(),
+                month(),
+                day(),
+                hour(),
+                minute(),
+                second());
         }
     }
     hadConnection = hasConnection;

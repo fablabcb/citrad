@@ -13,8 +13,6 @@ class SerialIO
   public:
     void setup();
 
-    static void printDigits(int digits);
-
     void processInputs(AudioSystem::Config& config, bool& sendOutput);
     void sendOutput(SignalAnalyzer::Results const& results, float audioPeak, Config const& config);
     void sendData(char const* data, size_t size, size_t timestamp, size_t counter);

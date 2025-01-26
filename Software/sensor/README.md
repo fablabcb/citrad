@@ -1,5 +1,7 @@
 # CitRad Sensor Unit
 
+Kurzanleitung auf [Deutsch](docs/README_de.md).
+
 The sensor is comprised of a Teensy, a matching Audio Board and a Radar Sensor ([see the Hardware README for more details](../../Hardware/README.md)). Together they can detect cars, pedestrians and bicycles from the roadside or even the third floor of a building.
 
 The Teensy continuously calculates a 1024 point FFT, analyzes the signal and stores result data on the SD card. It can also transmit the raw binary data over USB so that it can be monitored by the [Companion App](../mobileCompanion/README.md).
@@ -8,7 +10,7 @@ The Teensy continuously calculates a 1024 point FFT, analyzes the signal and sto
 
 1. Download the sensor hex file of the current release (see the release section of this repository).
 2. On Linux, check if your package manager has a some **teensy-loader-cli** and install it. Otherwise, see here https://www.pjrc.com/teensy/loader.html and follow the instructions there.
-3. Connect your Teensy via USB.
+3. Connect your Teensy via USB and insert the SD card.
 4. With **teensy-loader-cli**, execute the following in the terminal: `teensy_loader_cli -v --mcu=teensy40 -w <path to the hex file>` and follow the on screen instructions (press the button on the Teensy).
 5. Set the **Real Time Clock (RTC)** as detailed below.
 
@@ -50,22 +52,22 @@ When using Arduino IDE: load sensor.ino and compile/run that.
 
 1. Put the SD card into the sensor.
 2. Connect the Teensy via USB to your computer.
-3. Run `make deploy` (you can also run `make deployNoBuild` if you already build and did not make any changes to the code).
+3. Run `make deploy` (you can also run `make deployNoBuild` if you already build and did not make any changes to the code). If you get an error while programming the Teensy, simply try to run the command again.
 4. Press the button on the Teensy as the instructions on the screen tell you.
 
 The sensor will automatically restart and begin recording data.
 
 ## Real Time Clock (RTC)
 
-Connect the Teensy to your computer and run:
+Make sure the coin cell is on (Off->On), connect the running Teensy to your computer and run:
 
 ```
 date -u +T%s > /dev/ttyACM0
 ```
 
-The command sends the letter "T" followed by the current linux time to the Teensy. Replace `ttyACM0` with your serial device name.
+The command sends the letter "T" followed by the current Linux time (in UTC) to the Teensy. Replace `ttyACM0` with your serial device name (should not be required in most cases).
 
-The Real Time Clock needs to be set again after changing the coin cell (do that when you recognize the files on the SD cards have outdated timestamps)
+The Real Time Clock needs to be set again after changing the coin cell (do that when you recognize the files on the SD cards have outdated timestamps).
 
 # Getting data from the sensor
 
@@ -80,7 +82,7 @@ The program can write 3 different types of files to the SD card:
 
 The raw file and metrics are mainly used to develop the detection algorithm or for debugging. The detections file contains what we are most interested in.
 
-Please see the file format [here](FileFormats.md).
+Please see the file format [here](docs/FileFormats.md).
 
 ## Serial / USB
 
@@ -153,6 +155,8 @@ At the moment writing to SD creates noise in the data. Some ideas how to tackle 
 * pause data aquisition while writing to SD
 
 ### RTC
+
+The time used internally is in UTC!
 
 We use the internal RTC of the Teensy to add correct timestamps to the stored data. A coin cell battery needs to be connected to keep the internal RTC running. More on this here: [Teensy Time library explanation and examples](https://www.pjrc.com/Teensy/td_libs_Time.html).
 
