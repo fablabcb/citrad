@@ -9,10 +9,8 @@ The Teensy continuously calculates a 1024 point FFT, analyzes the signal and sto
 # Install a Hex File from the Release Section
 
 1. Download the sensor hex file of the current release (see the release section of this repository).
-2. On Linux, check if your package manager has a some **teensy-loader-cli** and install it. Otherwise, see here https://www.pjrc.com/teensy/loader.html and follow the instructions there.
-3. Connect your Teensy via USB and insert the SD card.
-4. With **teensy-loader-cli**, execute the following in the terminal: `teensy_loader_cli -v --mcu=teensy40 -w <path to the hex file>` and follow the on screen instructions (press the button on the Teensy).
-5. Set the **Real Time Clock (RTC)** as detailed below.
+2. Connect your Teensy via USB and insert the SD card.
+3. Download the manufacturer's software for Teensy here https://www.pjrc.com/teensy/loader.html and follow the instructions there.
 
 # Build and Run
 
@@ -108,7 +106,7 @@ The configuration file is optional. If you have no need of changing anything, pl
 If you have multiple sensors or you want to tinker, open the SD card (on any device) and create a file called `config.txt` in the root directory. Paste the following into that file and change the string `MySensorA` to something you like. All files created on that SD card will have this string prefixed to the file names.
 
 ```
-filePrefix: MySensorA
+filePrefix: MySensorA_
 writeDataToSdCard: true
 writeRawData: false
 maxSecondsPerFile: 3600
