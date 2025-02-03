@@ -50,7 +50,7 @@ bool FileIO::writeRawData(SignalAnalyzer::Results const& analyzerResults, Config
     bool ok = true;
     if(hasToCreateNew(rawFile, config, rawFileCreation))
     {
-        ok = openRawFile(binCount, config, dataSize);
+        ok = openRawFile(binCount, config, dataSize, analyzerResults.timestamp);
         if(not ok)
             return false;
     }
@@ -89,7 +89,7 @@ bool FileIO::writeCsvMetricsData(SignalAnalyzer::Results const& analyzerResults,
 {
     if(hasToCreateNew(csvMetricsFile, config, csvMetricsFileCreation))
     {
-        bool ok = openCsvMetricsFile(config);
+        bool ok = openCsvMetricsFile(config, analyzerResults.timestamp);
         if(not ok)
             return false;
     }
@@ -130,7 +130,7 @@ bool FileIO::writeCsvCarData(SignalAnalyzer::Results const& analyzerResults, Con
 
     if(hasToCreateNew(csvCarFile, config, csvCarFileCreation))
     {
-        bool ok = openCsvCarFile(config);
+        bool ok = openCsvCarFile(config, analyzerResults.timestamp);
         if(not ok)
             return false;
     }
@@ -168,7 +168,8 @@ bool FileIO::writeCsvCarData(SignalAnalyzer::Results const& analyzerResults, Con
     return true;
 }
 
-bool FileIO::openRawFile(uint16_t const binCount, Config const& config, uint8_t const& dataSize)
+bool FileIO::openRawFile(
+    uint16_t const binCount, Config const& config, uint8_t const& dataSize, unsigned long timeOffset)
 {
     if(rawFile)
     {
@@ -190,13 +191,20 @@ bool FileIO::openRawFile(uint16_t const binCount, Config const& config, uint8_t 
     time_t timestamp = Teensy3Clock.get();
     uint32_t teensyId = getTeensySerial();
 
+    const uint16_t headerSize =
+        4 + 2 + 1 + 1 + 2 + 4 + 4; // size of remaining header; does NOT include version and size
     rawFile.write((byte*)&fileFormatVersion, 2);
+    rawFile.write((byte*)&headerSize, 2);
+
+    // write header - this counts towards the size above
     rawFile.write((byte*)&timestamp, 4);
     rawFile.write((byte*)&binCount, 2);
     rawFile.write((byte*)&dataSize, 1);
     rawFile.write((byte*)&config.analyzer.isIqMeasurement, 1);
     rawFile.write((byte*)&config.analyzer.signalSampleRate, 2);
     rawFile.write((byte*)&teensyId, 4);
+    rawFile.write((byte*)&timeOffset, 4);
+    // When adding here, be sure to increase the header size!
     rawFile.flush();
 
     rawFileCreation = std::chrono::steady_clock::now();
@@ -204,7 +212,7 @@ bool FileIO::openRawFile(uint16_t const binCount, Config const& config, uint8_t 
     return true;
 }
 
-bool FileIO::openCsvMetricsFile(Config const& config)
+bool FileIO::openCsvMetricsFile(Config const& config, unsigned long timeOffset)
 {
     if(csvMetricsFile)
     {
@@ -222,7 +230,11 @@ bool FileIO::openCsvMetricsFile(Config const& config)
         Serial.println("(E) Failed to open new metrics csv file");
         return false;
     }
-    csvMetricsFile.printf("// fileFormat=%d, teensyId=%s\n", fileFormatVersion, teensySerialNumberAsString());
+    csvMetricsFile.printf(
+        "// fileFormat=%d, teensyId=%s, timeOffset=%d\n",
+        fileFormatVersion,
+        teensySerialNumberAsString(),
+        timeOffset);
     csvMetricsFile.print("timestamp, speed, speed_reverse, strength, strength_reverse, "
                          "meanAmplitudeForPedestrians, meanAmplitudeForCars, meanAmplitudeForNoiseLevel, ");
 
@@ -238,7 +250,7 @@ bool FileIO::openCsvMetricsFile(Config const& config)
     return true;
 }
 
-bool FileIO::openCsvCarFile(Config const& config)
+bool FileIO::openCsvCarFile(Config const& config, unsigned long timeOffset)
 {
     if(csvCarFile)
     {
@@ -259,13 +271,14 @@ bool FileIO::openCsvCarFile(Config const& config)
 
     csvCarFile.printf(
         "// fileFormat=%d, signalStrengthThreshold=%f, carSignalThreshold=%f, dynamicNoiseSmoothingFactor=%d, "
-        "carTriggerSignalSmoothingFactor=%d, teensyId=%s\n",
+        "carTriggerSignalSmoothingFactor=%d, teensyId=%s, timeOffset=%d\n",
         fileFormatVersion,
         config.analyzer.signalStrengthThreshold,
         config.analyzer.carSignalThreshold,
         config.analyzer.runningMeanHistoryN,
         config.analyzer.hannWindowN,
-        teensySerialNumberAsString());
+        teensySerialNumberAsString(),
+        timeOffset);
 
     csvCarFile.println("timestamp, isForward, sampleCount, medianSpeed");
     csvCarFile.flush();
@@ -283,7 +296,15 @@ void FileIO::setupSpi()
 
 bool FileIO::setupSdCard()
 {
-    return SD.begin(SDCARD_CS_PIN) == 1;
+    bool ok = SD.begin(SDCARD_CS_PIN) == 1;
+    if(ok)
+    {
+        rawFileCreation = {};
+        csvMetricsFileCreation = {};
+        csvCarFileCreation = {};
+    }
+
+    return ok;
 }
 
 std::string trimmed(std::string const& input)

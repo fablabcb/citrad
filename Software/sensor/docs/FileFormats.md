@@ -16,17 +16,19 @@ All file names follow this structure:
 
 ## Raw Binary File
 
-Current file format version: 3
+Current file format version: 4
 
 ### Header
 
 * 2 bytes (uint16): File Format Version
-* 4 bytes (time_t): Timestamp of file creation
+* 2 bytes (uint16): Size of the remaining header (everything below)
+* 4 bytes (time_t): Timestamp of file creation (Unix Time)
 * 2 bytes (uint16): number of fft bins
 * 1 byte  (uint_8): size of each frequency value (1 or 4 bytes) -> D_SIZE
 * 1 byte  (bool): use iq
 * 2 bytes (uint16): sample rate
 * 4 bytes (uint32): Teensy Unique Device Id
+* 4 bytes (uint32): Time Offset (ms how long the sensor has been running at time of file creation)
 
 ### Chunk Data
 
@@ -53,3 +55,16 @@ After that, like in any CSV file, you find the header information. These fields 
 detection.
 
 Please see FileIO.cpp for up do date information.
+
+## Timestamps
+
+The file names contain the time of creation down to the exact **second** (see above). The binary file also contains the timestamp of creation in its header. This is T<sub>FileCreation</sub>.
+
+The binary files and the CSVs contain a value *TimeOffset* for how many **milliseconds** the sensor has been running at the time of file creation. This is T<sub>MsAtFileCreation</sub>.
+
+The 'timestamp' of any data point (binary data or CSV row) is given in **milliseconds** that the sensor has been running. This is T<sub>MsAtRecording</sub>.
+
+So in order to get the *actual* timestamp for any data point, you need to do this:
+> T<sub>real</sub> = T<sub>FileCreation</sub> + (T<sub>MsAtRecording</sub> - T<sub>MsAtFileCreation</sub>)
+
+Note that in case of the sensor results file, the difference above can be negative.

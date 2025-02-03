@@ -17,7 +17,7 @@ class SignalAnalyzer
         bool isIqMeasurement = true; // measure in both directions?
 
         size_t runningMeanHistoryN = 100;   // number N used for running mean
-        size_t hannWindowN = 21;            // number N used for Hann window smoothing
+        size_t hannWindowN = 31;            // number N used for Hann window smoothing
         size_t carSignalLengthMinimum = 10; // how much signals are required to treat it as car
         size_t carSignalBufferLength = 200; // how much past signals are required to be stored for calculation
 

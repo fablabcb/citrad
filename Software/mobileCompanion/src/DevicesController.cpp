@@ -441,7 +441,11 @@ void DevicesController::readNextFromFile()
     static std::vector<float> buffer;
     buffer.resize(fileStream->getBatchSize());
     size_t timestamp;
-    fileStream->getNextBatch(buffer, timestamp);
+    if(fileStream->getNextBatch(buffer, timestamp) == false)
+    {
+        samplesToReadFromFile = 0;
+        return;
+    }
     fileDataReceiver(buffer, timestamp);
     samplesToReadFromFile -= 1;
     fileTimer.start(1);

@@ -13,11 +13,11 @@ struct Config
     AudioSystem::Config audio;
     SignalAnalyzer::Config analyzer;
 
-    bool writeDataToSdCard = true;    // write data to SD card?
-    bool write8bit = true;            // write data as 8bit binary (to save disk space)
-    bool writeRawData = false;        // write raw spectral data to SD?
-    bool writeCsvMetricsData = false; // write calculated metrics to csv table?
-    bool writeCsvCarData = true;      // write car signals to csv table?
+    bool writeDataToSdCard = true;   // write data to SD card?
+    bool write8bit = true;           // write data as 8bit binary (to save disk space)
+    bool writeRawData = true;        // write raw spectral data to SD?
+    bool writeCsvMetricsData = true; // write calculated metrics to csv table?
+    bool writeCsvCarData = true;     // write car signals to csv table?
 
     bool splitLargeFiles = true;     // if true, the raw and csv files will be split after each given timespan
     size_t maxSecondsPerFile = 3600; // used if splitLargeFiles is true

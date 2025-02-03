@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <sstream>
 
 namespace devices
 {
@@ -25,32 +26,46 @@ FileInputStream::FileInputStream(std::string const& fileName)
     if(!file)
         throw std::runtime_error("Failed to open " + fileName);
 
+    size_t headerSize = 9;
     {
-        size_t v = readNPrint.template operator()<uint16_t>(file, "fileFormatVersion");
-        if(v == 1)
+        formatVersion = readNPrint.template operator()<uint16_t>(file, "fileFormatVersion");
+        switch(formatVersion)
         {
-            formatVersion = FormatVersion::V1;
-            fftWidth = 1024;
+            case 1:
+                headerSize = 9;
+                break;
+            case 2:
+                headerSize = 10;
+                break;
+            case 3:
+                headerSize = 14;
+                break;
+            case 4:
+                headerSize = read.template operator()<uint16_t>(file);
+                break;
+            default:
+                throw std::runtime_error("Unknown file format version " + std::to_string(formatVersion));
         }
-        else if(v == 2)
-        {
-            formatVersion = FormatVersion::V2;
-            fftWidth = 1024;
-        }
-        else if(v == 3)
-        {
-            formatVersion = FormatVersion::V3;
-            fftWidth = 1024;
-        }
-        else
-            throw std::runtime_error("Unknown file format version " + std::to_string(v));
-    }
 
+        fftWidth = 1024;
+    }
+    size_t readHeaderBytes = 0;
+
+    readHeaderBytes += 4;
     readNPrint.template operator()<uint32_t>(file, "timestamp");
+
+    readHeaderBytes += 2;
     batchSize = readNPrint.template operator()<uint16_t>(file, "binCount");
-    if(formatVersion == FormatVersion::V2 || formatVersion == FormatVersion::V3)
+
+    if(formatVersion == 1)
+    {
+        dataType = DataType::UINT8;
+        buffer.resize(batchSize);
+    }
+    else
     {
         size_t dataSize = 1;
+        readHeaderBytes += 1;
         dataSize = readNPrint.template operator()<u_int8_t, int>(file, "dataSize");
         if(dataSize == 1)
         {
@@ -62,23 +77,30 @@ FileInputStream::FileInputStream(std::string const& fileName)
             dataType = DataType::FLOAT;
         }
     }
-    else if(formatVersion == FormatVersion::V1)
-    {
-        dataType = DataType::UINT8;
-        buffer.resize(batchSize);
-    }
 
+    readHeaderBytes += 1;
     readNPrint.template operator()<bool>(file, "isIQ");
+
+    readHeaderBytes += 2;
     sampleRate = readNPrint.template operator()<uint16_t>(file, "sampleRate");
 
-    if(formatVersion == FormatVersion::V3)
+    if(formatVersion >= 3)
     {
+        readHeaderBytes += 4;
         uint32_t sn = read.template operator()<uint32_t>(file);
         uint8_t* snp = (uint8_t*)&sn;
 
         printf("Teensy Id: %02x-%02x-%02x-%02x\n", snp[0], snp[1], snp[2], snp[3]);
         std::cout.flush();
     }
+    if(formatVersion >= 4)
+    {
+        readHeaderBytes += 4;
+        read.template operator()<uint32_t>(file); // sensor runtime at time of file creation
+    }
+
+    if(headerSize != readHeaderBytes)
+        throw std::runtime_error("Either too much or too few header bytes have been read.");
 }
 
 bool FileInputStream::getNextBatch(std::vector<float>& data, size_t& timestamp)
@@ -91,16 +113,13 @@ bool FileInputStream::getNextBatch(std::vector<float>& data, size_t& timestamp)
     if(data.size() != batchSize)
         throw std::runtime_error("data array for getNextBatch has wrong size");
 
-    switch(formatVersion)
+    if(formatVersion == 1)
     {
-        case FormatVersion::V1:
-            return getNextBatch_version1(data, timestamp);
-        case FormatVersion::V2:
-        case FormatVersion::V3: // same as v2
-            return getNextBatch_version2(data, timestamp);
+        return getNextBatch_version1(data, timestamp);
     }
-    // should never reach this
-    return false;
+
+    // all others are the same here
+    return getNextBatch_version2(data, timestamp);
 }
 
 bool FileInputStream::getNextBatch_version1(std::vector<float>& data, size_t& timestamp)

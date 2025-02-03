@@ -37,12 +37,6 @@ class FileInputStream : public InputStream
         UINT8,
         FLOAT
     };
-    enum class FormatVersion
-    {
-        V1,
-        V2,
-        V3
-    };
 
   private:
     bool getNextBatch_version1(std::vector<float>& data, size_t& timestamp);
@@ -53,7 +47,7 @@ class FileInputStream : public InputStream
     size_t sampleRate = 0;
     size_t fftWidth = 1024;
     std::ifstream file;
-    FormatVersion formatVersion = FormatVersion::V1;
+    size_t formatVersion = 1;
     DataType dataType = DataType::UINT8;
 
     size_t currentBatchNumber = 0;
